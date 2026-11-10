@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>基数変換コンバーター (2進・8進・10進・16進) | Apps Hub</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&family=Noto+Sans+JP:wght@400;500;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap');
+    body { 
+      font-family: 'Plus Jakarta Sans', 'Noto Sans JP', sans-serif;
+      min-height: 100vh;
+      min-height: 100dvh;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 flex flex-col justify-between p-4 sm:p-8">
+
+  <div class="max-w-4xl mx-auto w-full space-y-6">
+    <!-- ヘッダー (Apps Hub 統一規格) -->
+    <header class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm flex items-center justify-between flex-wrap gap-4">
+      <div class="flex items-center gap-3">
+        <a href="../" class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition py-1.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200" title="Apps Hubへ戻る">
+          <i class="fa-solid fa-arrow-left text-[10px]"></i>
+          <span>Apps Hub</span>
+        </a>
+        <div class="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-xl shadow-md shadow-indigo-500/20">
+          <i class="fa-solid fa-calculator"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold text-slate-900">基数変換コンバーター</h1>
+          <p class="text-xs text-slate-500">2進数 (BIN) / 8進数 (OCT) / 10進数 (DEC) / 16進数 (HEX) リアルタイム相互変換</p>
+        </div>
+      </div>
+      <div class="flex flex-wrap gap-2 text-xs">
+        <button onclick="setSample(255)" class="px-3 py-1.5 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl font-medium transition mono">255 (0xFF)</button>
+        <button onclick="setSample(1024)" class="px-3 py-1.5 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl font-medium transition mono">1024 (1 KiB)</button>
+        <button onclick="setSample(65535)" class="px-3 py-1.5 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl font-medium transition mono">65535 (16bit MAX)</button>
+        <button onclick="clearAll()" class="px-3 py-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl font-medium transition">
+          <i class="fa-solid fa-rotate-left mr-1"></i>クリア
+        </button>
+      </div>
+    </header>
+
+    <!-- 入力・変換グリッド (上段: 10進・16進 / 下段: 2進・8進 の左右対称2×2レイアウト) -->
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      
+      <!-- 上段左: 10進数 (DEC) -->
+      <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-2 relative group focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/20 transition">
+        <div class="flex items-center justify-between">
+          <label class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> 10進数 (Decimal)
+          </label>
+          <div class="flex items-center gap-2">
+            <span class="text-[11px] font-mono text-slate-400">0〜9</span>
+            <button onclick="copyVal('dec')" title="コピー" class="text-xs text-slate-400 hover:text-indigo-600 transition p-1">
+              <i class="fa-regular fa-copy"></i>
+            </button>
+          </div>
+        </div>
+        <div class="relative">
+          <input type="text" id="val-dec" placeholder="0" 
+                 class="w-full bg-slate-50 rounded-2xl p-3.5 font-mono text-xl font-bold text-slate-900 border border-slate-200 focus:outline-none focus:bg-white focus:border-indigo-500 transition">
+        </div>
+        <p id="err-dec" class="text-xs text-rose-500 hidden font-sans">有効な10進数を入力してください</p>
+      </div>
+
+      <!-- 上段右: 16進数 (HEX) -->
+      <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-2 relative group focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/20 transition">
+        <div class="flex items-center justify-between">
+          <label class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-violet-500"></span> 16進数 (Hexadecimal)
+          </label>
+          <div class="flex items-center gap-2">
+            <span class="text-[11px] font-mono text-slate-400">0x / 0〜9, A〜F</span>
+            <button onclick="copyVal('hex')" title="コピー" class="text-xs text-slate-400 hover:text-indigo-600 transition p-1">
+              <i class="fa-regular fa-copy"></i>
+            </button>
+          </div>
+        </div>
+        <div class="relative">
+          <input type="text" id="val-hex" placeholder="0" 
+                 class="w-full bg-slate-50 rounded-2xl p-3.5 font-mono text-xl font-bold text-violet-700 uppercase border border-slate-200 focus:outline-none focus:bg-white focus:border-indigo-500 transition">
+        </div>
+        <p id="err-hex" class="text-xs text-rose-500 hidden font-sans">有効な16進数を入力してください (0-9, A-F)</p>
+      </div>
+
+      <!-- 下段左: 2進数 (BINARY) -->
+      <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-2 relative group focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/20 transition">
+        <div class="flex items-center justify-between">
+          <label class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> 2進数 (Binary)
+          </label>
+          <div class="flex items-center gap-2">
+            <span class="text-[11px] font-mono text-slate-400">4ビット区切り</span>
+            <button onclick="copyVal('bin')" title="コピー" class="text-xs text-slate-400 hover:text-indigo-600 transition p-1">
+              <i class="fa-regular fa-copy"></i>
+            </button>
+          </div>
+        </div>
+        <div class="relative">
+          <input type="text" id="val-bin" placeholder="0" 
+                 class="w-full bg-slate-50 rounded-2xl p-3.5 font-mono text-base sm:text-lg font-bold text-blue-700 border border-slate-200 focus:outline-none focus:bg-white focus:border-indigo-500 transition tracking-wide">
+        </div>
+        <p id="err-bin" class="text-xs text-rose-500 hidden font-sans">0 または 1 のみ入力してください</p>
+      </div>
+
+      <!-- 下段右: 8進数 (OCTAL) -->
+      <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-2 relative group focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-500/20 transition">
+        <div class="flex items-center justify-between">
+          <label class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span> 8進数 (Octal)
+          </label>
+          <div class="flex items-center gap-2">
+            <span class="text-[11px] font-mono text-slate-400">0〜7</span>
+            <button onclick="copyVal('oct')" title="コピー" class="text-xs text-slate-400 hover:text-indigo-600 transition p-1">
+              <i class="fa-regular fa-copy"></i>
+            </button>
+          </div>
+        </div>
+        <div class="relative">
+          <input type="text" id="val-oct" placeholder="0" 
+                 class="w-full bg-slate-50 rounded-2xl p-3.5 font-mono text-xl font-bold text-amber-700 border border-slate-200 focus:outline-none focus:bg-white focus:border-indigo-500 transition">
+        </div>
+        <p id="err-oct" class="text-xs text-rose-500 hidden font-sans">0〜7 の数字のみ入力してください</p>
+      </div>
+
+    </section>
+
+    <!-- ビット内訳（反転操作パネル） -->
+    <section class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+          <i class="fa-solid fa-microchip text-indigo-500"></i> ビット内訳 (タップで反転)
+        </h3>
+        <span id="bit-length-badge" class="text-[11px] px-2.5 py-0.5 rounded-lg bg-indigo-50 text-indigo-600 font-bold mono">8-bit</span>
+      </div>
+
+      <div>
+        <div class="text-[11px] text-slate-500 mb-3 flex justify-between">
+          <span>下位ビット (LSB) ⇄ 上位ビット (MSB)</span>
+          <span class="mono text-indigo-600 font-semibold" id="bit-count-label">表示ビット: 8bit</span>
+        </div>
+        <div id="bit-grid" class="flex flex-wrap items-end gap-1.5 overflow-x-auto pb-2 font-mono">
+          <!-- JSで動的描画 -->
+        </div>
+      </div>
+    </section>
+
+    <!-- コピー完了トースト -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-slate-900 text-white text-xs px-4 py-2.5 rounded-2xl shadow-lg opacity-0 pointer-events-none transition-opacity duration-200 flex items-center gap-2">
+      <i class="fa-solid fa-circle-check text-emerald-400"></i>
+      <span>クリップボードにコピーしました</span>
+    </div>
+
+    <!-- Apps Hub 共通免責フッター規格 -->
+    <footer class="mt-8 py-6 text-center border-t border-slate-200">
+      <div class="max-w-4xl mx-auto px-4">
+        <p class="text-[11px] text-slate-400 leading-relaxed">
+          ※個人開発プロトタイプにつき無保証・自己責任にてご利用ください（データは端末内完結・サポート対象外）
+        </p>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    const elDec = document.getElementById('val-dec');
+    const elHex = document.getElementById('val-hex');
+    const elBin = document.getElementById('val-bin');
+    const elOct = document.getElementById('val-oct');
+
+    const errDec = document.getElementById('err-dec');
+    const errHex = document.getElementById('err-hex');
+    const errBin = document.getElementById('err-bin');
+    const errOct = document.getElementById('err-oct');
+
+    let currentBigInt = 0n;
+
+    function clearErrors() {
+      errDec.classList.add('hidden');
+      errHex.classList.add('hidden');
+      errBin.classList.add('hidden');
+      errOct.classList.add('hidden');
+    }
+
+    function updateAllFields(source) {
+      clearErrors();
+
+      if (source !== 'dec') elDec.value = currentBigInt.toString(10);
+      if (source !== 'hex') elHex.value = currentBigInt.toString(16).toUpperCase();
+      if (source !== 'bin') {
+        const rawBin = currentBigInt.toString(2);
+        const padded = rawBin.length % 4 !== 0 ? '0'.repeat(4 - (rawBin.length % 4)) + rawBin : rawBin;
+        elBin.value = padded.match(/.{1,4}/g)?.join(' ') || rawBin;
+      }
+      if (source !== 'oct') elOct.value = currentBigInt.toString(8);
+
+      renderDetails();
+    }
+
+    function renderDetails() {
+      const bitGrid = document.getElementById('bit-grid');
+      bitGrid.innerHTML = '';
+
+      const numBits = currentBigInt === 0n ? 8 : Math.max(8, Math.ceil(currentBigInt.toString(2).length / 8) * 8);
+      const binStr = currentBigInt.toString(2).padStart(numBits, '0');
+
+      document.getElementById('bit-length-badge').textContent = `${numBits}-bit`;
+      document.getElementById('bit-count-label').textContent = `表示ビット: ${numBits}bit`;
+
+      // ビットタイル生成 (MSB -> LSB)
+      for (let i = 0; i < numBits; i++) {
+        const bitVal = binStr[i];
+        const bitIdx = numBits - 1 - i;
+
+        const col = document.createElement('div');
+        col.className = 'flex flex-col items-center gap-1 min-w-[34px] sm:min-w-[38px]';
+
+        const btn = document.createElement('button');
+        btn.className = `w-full h-9 sm:h-10 rounded-xl flex items-center justify-center border text-base font-bold transition shadow-xs ${
+          bitVal === '1' 
+            ? 'bg-indigo-600 text-white border-indigo-700 hover:bg-indigo-700' 
+            : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200 hover:text-slate-700'
+        }`;
+        btn.textContent = bitVal;
+        btn.onclick = () => toggleBit(bitIdx);
+
+        const label = document.createElement('span');
+        label.className = 'text-xs font-bold font-mono text-slate-700 select-none tracking-tight';
+        label.textContent = bitIdx;
+
+        col.appendChild(btn);
+        col.appendChild(label);
+        bitGrid.appendChild(col);
+
+        if ((i + 1) % 4 === 0 && i !== numBits - 1) {
+          const sep = document.createElement('div');
+          sep.className = (i + 1) % 8 === 0 ? 'w-3.5 shrink-0' : 'w-1.5 shrink-0';
+          bitGrid.appendChild(sep);
+        }
+      }
+    }
+
+    function toggleBit(idx) {
+      currentBigInt ^= (1n << BigInt(idx));
+      updateAllFields();
+    }
+
+    // イベントリスナー
+    elDec.addEventListener('input', (e) => {
+      const val = e.target.value.trim().replace(/,/g, '');
+      if (val === '') {
+        currentBigInt = 0n;
+        updateAllFields('dec');
+        return;
+      }
+      try {
+        if (!/^\d+$/.test(val)) throw new Error();
+        currentBigInt = BigInt(val);
+        clearErrors();
+        updateAllFields('dec');
+      } catch {
+        errDec.classList.remove('hidden');
+      }
+    });
+
+    elHex.addEventListener('input', (e) => {
+      let val = e.target.value.trim().replace(/^0x/i, '');
+      if (val === '') {
+        currentBigInt = 0n;
+        updateAllFields('hex');
+        return;
+      }
+      try {
+        if (!/^[0-9a-fA-F]+$/.test(val)) throw new Error();
+        currentBigInt = BigInt('0x' + val);
+        clearErrors();
+        updateAllFields('hex');
+      } catch {
+        errHex.classList.remove('hidden');
+      }
+    });
+
+    elBin.addEventListener('input', (e) => {
+      let val = e.target.value.trim().replace(/\s+/g, '');
+      if (val === '') {
+        currentBigInt = 0n;
+        updateAllFields('bin');
+        return;
+      }
+      try {
+        if (!/^[01]+$/.test(val)) throw new Error();
+        currentBigInt = BigInt('0b' + val);
+        clearErrors();
+        updateAllFields('bin');
+      } catch {
+        errBin.classList.remove('hidden');
+      }
+    });
+
+    elOct.addEventListener('input', (e) => {
+      let val = e.target.value.trim().replace(/^0o/i, '');
+      if (val === '') {
+        currentBigInt = 0n;
+        updateAllFields('oct');
+        return;
+      }
+      try {
+        if (!/^[0-7]+$/.test(val)) throw new Error();
+        currentBigInt = BigInt('0o' + val);
+        clearErrors();
+        updateAllFields('oct');
+      } catch {
+        errOct.classList.remove('hidden');
+      }
+    });
+
+    function setSample(val) {
+      currentBigInt = BigInt(val);
+      updateAllFields();
+    }
+
+    function clearAll() {
+      currentBigInt = 0n;
+      updateAllFields();
+    }
+
+    function copyVal(type) {
+      let text = '';
+      if (type === 'dec') text = currentBigInt.toString(10);
+      if (type === 'hex') text = currentBigInt.toString(16).toUpperCase();
+      if (type === 'bin') text = currentBigInt.toString(2);
+      if (type === 'oct') text = currentBigInt.toString(8);
+
+      navigator.clipboard.writeText(text).then(() => {
+        showToast();
+      });
+    }
+
+    function showToast() {
+      const toast = document.getElementById('toast');
+      toast.classList.remove('opacity-0');
+      toast.classList.add('opacity-100');
+      setTimeout(() => {
+        toast.classList.remove('opacity-100');
+        toast.classList.add('opacity-0');
+      }, 1500);
+    }
+
+    // 初期化
+    window.addEventListener('DOMContentLoaded', () => {
+      setSample(255);
+    });
+  </script>
+</body>
+</html>
